@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercise Routine</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f4f0; --bg3: #eeede9;
+  --text: #1a1a18; --text2: #6b6b67; --text3: #9e9e9a;
+  --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+  --radius-md: 8px; --radius-lg: 12px;
+  --font: system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+    --text: #f0efe9; --text2: #9e9e9a; --text3: #6b6b67;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+  }
+}
+body { font-family: var(--font); background: var(--bg); color: var(--text); padding: 1.5rem 1rem 3rem; max-width: 640px; margin: 0 auto; }
+
+/* Header */
+.header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; }
+.header-text h1 { font-size: 22px; font-weight: 500; margin-bottom: 0.2rem; }
+.header-text .subtitle { font-size: 13px; color: var(--text3); }
+.settings-icon-btn { background: none; border: 0.5px solid var(--border2); border-radius: var(--radius-md); padding: 7px 10px; cursor: pointer; color: var(--text2); font-size: 16px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+.settings-icon-btn:hover { background: var(--bg2); }
+
+/* Settings panel */
+.settings-panel { display: none; background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 1.25rem; }
+.settings-panel.open { display: block; }
+.settings-title { font-size: 15px; font-weight: 500; margin-bottom: 1rem; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 0.5px solid var(--border); gap: 16px; }
+.settings-row:first-of-type { border-top: none; padding-top: 0; }
+.settings-label { font-size: 14px; }
+.settings-sublabel { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.settings-control { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.stepper-btn { width: 32px; height: 32px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); font-size: 18px; line-height: 1; cursor: pointer; font-family: var(--font); display: flex; align-items: center; justify-content: center; }
+.stepper-btn:hover { background: var(--bg3); }
+.stepper-btn:active { transform: scale(0.95); }
+.stepper-val { font-size: 16px; font-weight: 500; min-width: 52px; text-align: center; }
+.settings-save-row { margin-top: 1rem; text-align: right; }
+.save-btn { padding: 8px 20px; border-radius: var(--radius-md); border: 0.5px solid #1D9E75; background: #E1F5EE; color: #085041; font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font); }
+.save-btn:hover { background: #9FE1CB; }
+.saved-msg { font-size: 12px; color: #1D9E75; margin-right: 10px; opacity: 0; transition: opacity 0.3s; display: inline-block; }
+.saved-msg.show { opacity: 1; }
+
+/* Section selector */
+.section-selector { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-bottom: 1.25rem; }
+.sec-btn { padding: 10px 8px; border-radius: var(--radius-lg); border: 0.5px solid var(--border2); font-size: 13px; font-weight: 500; cursor: pointer; background: var(--bg2); color: var(--text2); font-family: var(--font); text-align: center; }
+.sec-btn:hover { background: var(--bg3); }
+.sec-btn.active-warmup  { background: #FAEEDA; color: #633806; border-color: #BA7517; }
+.sec-btn.active-circuit { background: #E1F5EE; color: #085041; border-color: #1D9E75; }
+.sec-btn.active-cardio  { background: #FAECE7; color: #712B13; border-color: #D85A30; }
+.sec-sublabel { display: block; font-size: 10px; font-weight: 400; opacity: 0.7; margin-top: 2px; }
+
+/* Timer */
+.elapsed-row { display: flex; align-items: baseline; justify-content: center; gap: 8px; margin-bottom: 16px; }
+.elapsed-label { font-size: 12px; color: var(--text3); }
+.elapsed-val { font-size: 18px; font-weight: 500; }
+.timer-block { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 1rem; text-align: center; }
+.phase-tag { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: var(--radius-md); margin-bottom: 12px; }
+.pt-warmup { background: #FAEEDA; color: #633806; }
+.pt-work   { background: #E1F5EE; color: #085041; }
+.pt-move   { background: #EEEDFE; color: #3C3489; }
+.pt-rest   { background: #E6F1FB; color: #0C447C; }
+.pt-finish { background: #FAECE7; color: #712B13; }
+.pt-done   { background: #EAF3DE; color: #27500A; }
+.ex-name { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+.ex-target { font-size: 13px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
+.countdown { font-size: 52px; font-weight: 500; line-height: 1; margin-bottom: 8px; }
+.round-info { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
+.pbg { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+.pb { height: 4px; border-radius: 2px; transition: width 0.9s linear; }
+.pb-warmup { background: #BA7517; }
+.pb-work   { background: #1D9E75; }
+.pb-move   { background: #7F77DD; }
+.pb-rest   { background: #378ADD; }
+.pb-finish { background: #D85A30; }
+.controls { display: flex; gap: 8px; justify-content: center; }
+.ctrl-btn { padding: 8px 22px; border-radius: var(--radius-md); border: 0.5px solid var(--border2); font-size: 14px; cursor: pointer; background: transparent; color: var(--text); font-family: var(--font); }
+.ctrl-btn:hover { background: var(--bg2); }
+.ctrl-btn:active { transform: scale(0.98); }
+
+/* Shake banner */
+.shake-banner { background: #E6F1FB; border: 0.5px solid #B5D4F4; border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 1rem; text-align: center; display: none; }
+.shake-banner.visible { display: block; }
+.shake-title { font-size: 17px; font-weight: 500; color: #0C447C; margin-bottom: 4px; }
+.shake-sub { font-size: 13px; color: #185FA5; line-height: 1.5; }
+
+/* Exercise list */
+.ex-list { border: 0.5px solid var(--border2); border-radius: var(--radius-lg); overflow: hidden; margin-top: 1rem; }
+.sec-group-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px 8px; border-top: 0.5px solid var(--border); background: var(--bg2); }
+.sec-group-header:first-child { border-top: none; }
+.sec-group-pill { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: var(--radius-md); }
+.pill-warmup  { background: #FAEEDA; color: #633806; }
+.pill-circuit { background: #E1F5EE; color: #085041; }
+.pill-cardio  { background: #FAECE7; color: #712B13; }
+.sec-group-label { font-size: 12px; color: var(--text3); }
+.ex-item { display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 0.5px solid var(--border); }
+.ex-item:last-child { border-bottom: none; }
+.ex-item.current { background: var(--bg2); }
+.ex-num { width: 22px; height: 22px; border-radius: 50%; background: var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: var(--text2); flex-shrink: 0; }
+.ex-num.cur  { background: #E1F5EE; color: #085041; }
+.ex-num.warm { background: #FAEEDA; color: #633806; }
+.ex-num.fin  { background: #FAECE7; color: #712B13; }
+.ex-info { flex: 1; min-width: 0; }
+.ex-iname { font-size: 13px; font-weight: 500; }
+.ex-itarget { font-size: 11px; color: var(--text3); }
+.ex-equip { font-size: 11px; padding: 2px 7px; border-radius: var(--radius-md); background: var(--bg2); color: var(--text2); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-text">
+    <h1>Exercise Routine</h1>
+    <p class="subtitle">Chest, arms &amp; core · warm-up, circuit &amp; cardio finisher</p>
+  </div>
+  <button class="settings-icon-btn" onclick="toggleSettings()" title="Settings">&#9881;</button>
+</div>
+
+<!-- Settings panel -->
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-title">Settings</div>
+
+  <div class="settings-row">
+    <div>
+      <div class="settings-label">Chest press weight</div>
+      <div class="settings-sublabel">Multigym · current working weight</div>
+    </div>
+    <div class="settings-control">
+      <button class="stepper-btn" onclick="step('chestPress', -5)">&#8722;</button>
+      <span class="stepper-val" id="val-chestPress">60 kg</span>
+      <button class="stepper-btn" onclick="step('chestPress', 5)">+</button>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div>
+      <div class="settings-label">Lat pulldown weight</div>
+      <div class="settings-sublabel">Multigym · current working weight</div>
+    </div>
+    <div class="settings-control">
+      <button class="stepper-btn" onclick="step('latPulldown', -5)">&#8722;</button>
+      <span class="stepper-val" id="val-latPulldown">25 kg</span>
+      <button class="stepper-btn" onclick="step('latPulldown', 5)">+</button>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div>
+      <div class="settings-label">Circuit rounds</div>
+      <div class="settings-sublabel">Number of times to repeat the 5 exercises</div>
+    </div>
+    <div class="settings-control">
+      <button class="stepper-btn" onclick="step('rounds', -1)">&#8722;</button>
+      <span class="stepper-val" id="val-rounds">2</span>
+      <button class="stepper-btn" onclick="step('rounds', 1)">+</button>
+    </div>
+  </div>
+
+  <div class="settings-save-row">
+    <span class="saved-msg" id="saved-msg">Saved</span>
+    <button class="save-btn" onclick="saveSettings()">Save &amp; apply</button>
+  </div>
+</div>
+
+<!-- Section selector -->
+<div class="section-selector">
+  <button class="sec-btn active-warmup" id="btn-sec-warmup" onclick="jumpToSection('warmup')">
+    Warm-up
+    <span class="sec-sublabel">Rower · 3 min</span>
+  </button>
+  <button class="sec-btn" id="btn-sec-circuit" onclick="jumpToSection('circuit')">
+    Circuit
+    <span class="sec-sublabel" id="circuit-sublabel">2 rounds · 5 exercises</span>
+  </button>
+  <button class="sec-btn" id="btn-sec-cardio" onclick="jumpToSection('cardio')">
+    Cardio
+    <span class="sec-sublabel">Treadmill · 4 min</span>
+  </button>
+</div>
+
+<!-- Timer -->
+<div class="timer-block">
+  <div><span class="phase-tag pt-warmup" id="phase-tag">Warm-up</span></div>
+  <div class="ex-name" id="ex-name">Rowing machine</div>
+  <div class="ex-target" id="ex-target">Easy pace — loosen up shoulders, back and arms. No effort yet.</div>
+  <div class="countdown" id="countdown">3:00</div>
+  <div class="round-info" id="round-info">3 minutes · comfortable pace</div>
+  <div class="pbg"><div class="pb pb-warmup" id="pbar" style="width:100%"></div></div>
+  <div class="elapsed-row"><span class="elapsed-label">Elapsed</span><span class="elapsed-val" id="s-elapsed">0:00</span></div>
+  <div class="controls">
+    <button class="ctrl-btn" id="btn-start" onclick="toggle()">Start</button>
+    <button class="ctrl-btn" onclick="resetSection()">Reset section</button>
+  </div>
+</div>
+
+<div class="shake-banner" id="shake-banner">
+  <div class="shake-title">Time for your whey shake</div>
+  <div class="shake-sub">Have 1 scoop with milk now — within 30 mins of finishing. Your protein top-up (100g meat) at dinner, 3+ hrs from now.</div>
+</div>
+
+<div class="ex-list" id="ex-list"></div>
+
+<script>
+// ── Settings ─────────────────────────────────────────────────────────────────
+const DEFAULTS = { chestPress: 60, latPulldown: 25, rounds: 2 };
+const LIMITS   = { chestPress: [20, 150], latPulldown: [10, 100], rounds: [1, 6] };
+
+let cfg = Object.assign({}, DEFAULTS);
+
+function loadSettings() {
+  try {
+    const s = localStorage.getItem('er-settings');
+    if (s) Object.assign(cfg, JSON.parse(s));
+  } catch(e) {}
+  syncSettingsUI();
+}
+
+function syncSettingsUI() {
+  document.getElementById('val-chestPress').textContent  = cfg.chestPress + ' kg';
+  document.getElementById('val-latPulldown').textContent = cfg.latPulldown + ' kg';
+  document.getElementById('val-rounds').textContent      = cfg.rounds;
+  document.getElementById('circuit-sublabel').textContent = cfg.rounds + ' round' + (cfg.rounds !== 1 ? 's' : '') + ' · 5 exercises';
+}
+
+function step(key, delta) {
+  const [min, max] = LIMITS[key];
+  cfg[key] = Math.min(max, Math.max(min, cfg[key] + delta));
+  syncSettingsUI();
+}
+
+function saveSettings() {
+  try { localStorage.setItem('er-settings', JSON.stringify(cfg)); } catch(e) {}
+  // Rebuild sequence with new rounds, reset to warmup
+  rebuildAndReset();
+  // Flash saved message
+  const msg = document.getElementById('saved-msg');
+  msg.classList.add('show');
+  setTimeout(() => msg.classList.remove('show'), 2000);
+  // Close panel after short delay
+  setTimeout(() => {
+    document.getElementById('settings-panel').classList.remove('open');
+  }, 600);
+}
+
+function toggleSettings() {
+  document.getElementById('settings-panel').classList.toggle('open');
+}
+
+// ── Exercise data ─────────────────────────────────────────────────────────────
+const WORK = 40, MOVE = 20, ROUNDREST = 90;
+
+function getCircuitExercises() {
+  return [
+    { name: "Chest press",           target: "Chest · triceps · anterior deltoid", equip: "Multigym",    tip: () => cfg.chestPress + 'kg · full range. Pause 1 sec at full extension. Drop to ' + (cfg.chestPress - 5) + 'kg if form suffers.' },
+    { name: "Lat pulldown",          target: "Back · biceps · rear deltoid",        equip: "Multigym",    tip: () => cfg.latPulldown + 'kg · pull to upper chest, squeeze lats at bottom. Goal: no pauses for 40s.' },
+    { name: "Dead hang + knee tuck", target: "Core · grip · shoulders",             equip: "Pull-up bar", tip: () => "Hang, slowly pull knees to chest and lower. Can't yet? Hold a braced dead hang." },
+    { name: "Push-up",               target: "Chest · triceps · core stability",    equip: "Floor",       tip: () => "Chest to 2cm off floor, full lockout at top. Knees down is fine — keep reps quality." },
+    { name: "Plank shoulder tap",    target: "Core · chest · shoulders",            equip: "Floor",       tip: () => "High plank. Tap opposite shoulder alternately. Lock your hips — every wobble is good." },
+  ];
+}
+
+const finisherIntervals = [
+  { name: "Easy jog",       target: "Settle into rhythm",  speed: "7 km/h",   dur: 60 },
+  { name: "Sprint",         target: "Push hard",            speed: "10 km/h",  dur: 30 },
+  { name: "Recovery jog",   target: "Active recovery",      speed: "7 km/h",   dur: 30 },
+  { name: "Sprint",         target: "Last hard push",       speed: "10 km/h",  dur: 30 },
+  { name: "Recovery jog",   target: "Active recovery",      speed: "7 km/h",   dur: 30 },
+  { name: "Sprint",         target: "Give it everything",   speed: "10 km/h",  dur: 30 },
+  { name: "Cool-down walk", target: "Let heart rate drop",  speed: "5.5 km/h", dur: 60 },
+];
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playTone(freq, dur, type, vol, delay) {
+  try {
+    const ctx = getCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-6, ctx.currentTime);
+    comp.ratio.setValueAtTime(4, ctx.currentTime);
+    osc.connect(gain); gain.connect(comp); comp.connect(ctx.destination);
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + (delay||0));
+    gain.gain.setValueAtTime(vol || 1.5, ctx.currentTime + (delay||0));
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (delay||0) + dur);
+    osc.start(ctx.currentTime + (delay||0));
+    osc.stop(ctx.currentTime + (delay||0) + dur);
+  } catch(e) {}
+}
+function beepWorkEnd() {
+  playTone(1047, 0.15, 'square', 1.8, 0);
+  playTone(1047, 0.2,  'square', 1.8, 0.2);
+}
+function beepMoveEnd() {
+  playTone(523, 0.45, 'triangle', 1.5, 0);
+}
+
+// ── Sequence ──────────────────────────────────────────────────────────────────
+let seq = [], sectionStarts = {};
+
+function buildSequence() {
+  const exercises = getCircuitExercises();
+  const rounds = cfg.rounds;
+  let s = [];
+  s.push({ type: 'warmup', dur: 180, section: 'warmup' });
+  for (let r = 0; r < rounds; r++) {
+    for (let e = 0; e < exercises.length; e++) {
+      s.push({ type: 'work', round: r, ex: e, dur: WORK, section: 'circuit' });
+      if (e < exercises.length - 1)
+        s.push({ type: 'move', round: r, ex: e, nextEx: e+1, dur: MOVE, section: 'circuit' });
+    }
+    if (r < rounds - 1)
+      s.push({ type: 'roundrest', round: r, dur: ROUNDREST, section: 'circuit' });
+  }
+  for (let i = 0; i < finisherIntervals.length; i++)
+    s.push({ type: 'finisher', fi: i, dur: finisherIntervals[i].dur, section: 'cardio' });
+  s.push({ type: 'done', dur: 0, section: 'done' });
+  return s;
+}
+
+function rebuildAndReset() {
+  stopTimer();
+  seq = buildSequence();
+  sectionStarts = {
+    warmup:  seq.findIndex(s => s.section === 'warmup'),
+    circuit: seq.findIndex(s => s.section === 'circuit'),
+    cardio:  seq.findIndex(s => s.section === 'cardio'),
+  };
+  seqIdx = 0; phaseTick = 0; elapsed = 0;
+  document.getElementById('s-elapsed').textContent = '0:00';
+  document.getElementById('btn-start').textContent = 'Start';
+  document.getElementById('shake-banner').classList.remove('visible');
+  render();
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let seqIdx = 0, phaseTick = 0, elapsed = 0, running = false, timerInterval = null;
+
+function currentSection() { return (seq[seqIdx] || {}).section || 'warmup'; }
+
+function stopTimer() {
+  if (running) { clearInterval(timerInterval); running = false; document.getElementById('btn-start').textContent = 'Start'; }
+}
+
+function jumpToSection(name) {
+  stopTimer();
+  seqIdx = sectionStarts[name] || 0;
+  phaseTick = 0;
+  document.getElementById('shake-banner').classList.remove('visible');
+  render();
+}
+
+function resetSection() {
+  stopTimer();
+  const sec = currentSection();
+  seqIdx = sectionStarts[sec === 'done' ? 'cardio' : sec] || 0;
+  phaseTick = 0;
+  document.getElementById('shake-banner').classList.remove('visible');
+  render();
+}
+
+function fmtTime(s) { return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+
+function currentRound() {
+  for (let i = seqIdx; i >= 0; i--) {
+    if (seq[i] && seq[i].round !== undefined) return seq[i].round + 1;
+  }
+  return null;
+}
+
+function updateSecBtns() {
+  const sec = currentSection();
+  document.getElementById('btn-sec-warmup').className  = 'sec-btn' + (sec === 'warmup'  ? ' active-warmup'  : '');
+  document.getElementById('btn-sec-circuit').className = 'sec-btn' + (sec === 'circuit' ? ' active-circuit' : '');
+  document.getElementById('btn-sec-cardio').className  = 'sec-btn' + (sec === 'cardio' || sec === 'done' ? ' active-cardio' : '');
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderList() {
+  const cur = seq[seqIdx] || {};
+  const exercises = getCircuitExercises();
+  const rounds = cfg.rounds;
+  let html = '';
+
+  const wa = cur.type === 'warmup';
+  html += `<div class="sec-group-header"><span class="sec-group-pill pill-warmup">Warm-up</span><span class="sec-group-label">Rowing machine · 3 min</span></div>`;
+  html += `<div class="ex-item${wa?' current':''}"><div class="ex-num${wa?' warm':''}">W</div><div class="ex-info"><div class="ex-iname">Rowing machine</div><div class="ex-itarget">Easy pace · 3 mins</div></div><span class="ex-equip">Rower</span></div>`;
+
+  html += `<div class="sec-group-header"><span class="sec-group-pill pill-circuit">Circuit</span><span class="sec-group-label">${rounds} round${rounds!==1?'s':''} · 40s work / 20s move</span></div>`;
+  exercises.forEach((e, i) => {
+    const a = cur.type === 'work' && cur.ex === i;
+    html += `<div class="ex-item${a?' current':''}"><div class="ex-num${a?' cur':''}">${i+1}</div><div class="ex-info"><div class="ex-iname">${e.name}</div><div class="ex-itarget">${e.target}</div></div><span class="ex-equip">${e.equip}</span></div>`;
+  });
+
+  html += `<div class="sec-group-header"><span class="sec-group-pill pill-cardio">Cardio</span><span class="sec-group-label">Treadmill intervals · ~4 min</span></div>`;
+  finisherIntervals.forEach((f, i) => {
+    const a = cur.type === 'finisher' && cur.fi === i;
+    html += `<div class="ex-item${a?' current':''}"><div class="ex-num${a?' fin':''}">F</div><div class="ex-info"><div class="ex-iname">${f.name}</div><div class="ex-itarget">${f.speed} · ${f.dur}s</div></div><span class="ex-equip">Treadmill</span></div>`;
+  });
+
+  document.getElementById('ex-list').innerHTML = html;
+}
+
+function renderTimer() {
+  const s = seq[seqIdx];
+  const exercises = getCircuitExercises();
+  const rounds = cfg.rounds;
+  updateSecBtns();
+
+  if (!s || s.type === 'done') {
+    document.getElementById('phase-tag').className = 'phase-tag pt-done';
+    document.getElementById('phase-tag').textContent = 'Session complete';
+    document.getElementById('ex-name').textContent = 'Great work!';
+    document.getElementById('ex-target').textContent = 'All three sections done.';
+    document.getElementById('countdown').textContent = '--';
+    document.getElementById('round-info').textContent = 'Tap any section above to repeat';
+    document.getElementById('pbar').style.width = '100%';
+    document.getElementById('pbar').className = 'pb pb-work';
+    document.getElementById('btn-start').textContent = 'Done';
+    document.getElementById('shake-banner').classList.add('visible');
+    return;
+  }
+
+  const len = s.dur, remaining = Math.max(0, len - phaseTick);
+  document.getElementById('countdown').textContent = fmtTime(remaining);
+  document.getElementById('pbar').style.width = (len > 0 ? remaining / len * 100 : 0) + '%';
+
+  if (s.type === 'warmup') {
+    document.getElementById('phase-tag').className = 'phase-tag pt-warmup';
+    document.getElementById('phase-tag').textContent = 'Warm-up · Rower';
+    document.getElementById('ex-name').textContent = 'Rowing machine';
+    document.getElementById('ex-target').textContent = 'Easy pace — loosen up shoulders, back and arms. No effort yet.';
+    document.getElementById('round-info').textContent = '3 minutes · comfortable pace';
+    document.getElementById('pbar').className = 'pb pb-warmup';
+
+  } else if (s.type === 'work') {
+    const ex = exercises[s.ex];
+    document.getElementById('phase-tag').className = 'phase-tag pt-work';
+    document.getElementById('phase-tag').textContent = 'Circuit · ' + ex.equip;
+    document.getElementById('ex-name').textContent = ex.name;
+    document.getElementById('ex-target').textContent = ex.tip();
+    document.getElementById('round-info').textContent = 'Round ' + (s.round+1) + ' of ' + rounds + ' · Exercise ' + (s.ex+1) + ' of ' + exercises.length;
+    document.getElementById('pbar').className = 'pb pb-work';
+
+  } else if (s.type === 'move') {
+    const next = exercises[s.nextEx];
+    document.getElementById('phase-tag').className = 'phase-tag pt-move';
+    document.getElementById('phase-tag').textContent = 'Move';
+    document.getElementById('ex-name').textContent = 'Next: ' + next.name;
+    document.getElementById('ex-target').textContent = next.tip();
+    document.getElementById('round-info').textContent = 'Round ' + (s.round+1) + ' · get in position';
+    document.getElementById('pbar').className = 'pb pb-move';
+
+  } else if (s.type === 'roundrest') {
+    document.getElementById('phase-tag').className = 'phase-tag pt-rest';
+    document.getElementById('phase-tag').textContent = 'Rest';
+    document.getElementById('ex-name').textContent = 'Round ' + (s.round+2) + ' coming up';
+    document.getElementById('ex-target').textContent = 'Breathe. Shake out your arms. ' + Math.round((s.round+1)/rounds*100) + '% through.';
+    document.getElementById('round-info').textContent = 'Round ' + (s.round+1) + ' complete · 90 secs rest';
+    document.getElementById('pbar').className = 'pb pb-rest';
+
+  } else if (s.type === 'finisher') {
+    const fi = finisherIntervals[s.fi];
+    document.getElementById('phase-tag').className = 'phase-tag pt-finish';
+    document.getElementById('phase-tag').textContent = 'Cardio · Treadmill';
+    document.getElementById('ex-name').textContent = fi.name;
+    document.getElementById('ex-target').textContent = fi.target + ' · set treadmill to ' + fi.speed;
+    document.getElementById('round-info').textContent = 'Interval ' + (s.fi+1) + ' of ' + finisherIntervals.length + ' · ' + fi.dur + 's';
+    document.getElementById('pbar').className = 'pb pb-finish';
+  }
+}
+
+function render() { renderTimer(); renderList(); }
+
+function tickFn() {
+  elapsed++; phaseTick++;
+  document.getElementById('s-elapsed').textContent = fmtTime(elapsed);
+  const s = seq[seqIdx];
+  if (!s || s.type === 'done') { clearInterval(timerInterval); running = false; render(); return; }
+  if (phaseTick >= s.dur) {
+    if (s.type === 'work') beepWorkEnd();
+    else if (s.type === 'move' || s.type === 'roundrest') beepMoveEnd();
+    seqIdx++; phaseTick = 0;
+  }
+  render();
+}
+
+function toggle() {
+  getCtx();
+  const s = seq[seqIdx];
+  if (!s || s.type === 'done') return;
+  running = !running;
+  document.getElementById('btn-start').textContent = running ? 'Pause' : 'Resume';
+  if (running) timerInterval = setInterval(tickFn, 1000);
+  else clearInterval(timerInterval);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadSettings();
+rebuildAndReset();
+</script>
+</body>
+</html>
