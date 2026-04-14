@@ -301,21 +301,23 @@ function playTone(freq, dur, type, vol, delay) {
   } catch(e) {}
 }
 function beepWorkEnd() {
-  playTone(1047, 0.15, 'square', 3.0, 0);
-  playTone(1047, 0.2,  'square', 3.0, 0.2);
+  playTone(1047, 0.15, 'square', 5, 0);
+  playTone(1047, 0.2,  'square', 5, 0.2);
 }
 function beepMoveEnd() {
-  playTone(523, 0.45, 'triangle', 2.5, 0);
+  playTone(523, 0.15, 'triangle', 50, 0);
+  playTone(523, 0.15, 'triangle', 50, 0.15);
+  playTone(523, 0.15, 'triangle', 50, 0.3);
 }
 function beepFinisherEnd() {
-  playTone(880, 0.2, 'sine', 2.5, 0);
+  playTone(880, 0.2, 'sine', 20, 0);
 }
 function playFanfare() {
   // Ascending celebration tones
-  playTone(523, 0.15, 'sine', 2.8, 0);     // C5
-  playTone(659, 0.15, 'sine', 2.8, 0.15);  // E5
-  playTone(784, 0.15, 'sine', 2.8, 0.3);   // G5
-  playTone(1047, 0.4, 'sine', 3.0, 0.45);  // C6 - hold
+  playTone(523, 0.15, 'sine', 10, 0);     // C5
+  playTone(659, 0.15, 'sine', 20, 0.15);  // E5
+  playTone(784, 0.15, 'sine', 40, 0.3);   // G5
+  playTone(1047, 0.4, 'sine', 80, 0.45);  // C6 - hold
 }
 
 // ── Sequence ──────────────────────────────────────────────────────────────────
@@ -561,7 +563,7 @@ function tickFn() {
     return;
   }
   if (phaseTick >= s.dur) {
-    if (s.type === 'work') beepWorkEnd();
+    if (s.type === 'work' || s.type === 'warmup') beepWorkEnd();
     else if (s.type === 'move' || s.type === 'roundrest') beepMoveEnd();
     else if (s.type === 'finisher') beepFinisherEnd();
     seqIdx++; phaseTick = 0;
