@@ -349,10 +349,50 @@ function rebuildAndReset() {
 // ── State ─────────────────────────────────────────────────────────────────────
 let seqIdx = 0, phaseTick = 0, elapsed = 0, running = false, timerInterval = null;
 
+// ── Screen Wake Lock ──────────────────────────────────────────────────────────
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => {
+        console.log('Wake Lock released');
+      });
+      console.log('Wake Lock active');
+    } catch (err) {
+      console.error('Wake Lock request failed:', err);
+    }
+  }
+}
+
+async function releaseWakeLock() {
+  if (wakeLock !== null) {
+    try {
+      await wakeLock.release();
+      wakeLock = null;
+    } catch (err) {
+      console.error('Wake Lock release failed:', err);
+    }
+  }
+}
+
+// Re-request wake lock when page becomes visible again (if timer is running)
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && running) {
+    await requestWakeLock();
+  }
+});
+
 function currentSection() { return (seq[seqIdx] || {}).section || 'warmup'; }
 
 function stopTimer() {
-  if (running) { clearInterval(timerInterval); running = false; document.getElementById('btn-start').textContent = 'Start'; }
+  if (running) {
+    clearInterval(timerInterval);
+    running = false;
+    document.getElementById('btn-start').textContent = 'Start';
+    releaseWakeLock();
+  }
 }
 
 function jumpToSection(name) {
@@ -489,7 +529,13 @@ function tickFn() {
   elapsed++; phaseTick++;
   document.getElementById('s-elapsed').textContent = fmtTime(elapsed);
   const s = seq[seqIdx];
-  if (!s || s.type === 'done') { clearInterval(timerInterval); running = false; render(); return; }
+  if (!s || s.type === 'done') {
+    clearInterval(timerInterval);
+    running = false;
+    releaseWakeLock();
+    render();
+    return;
+  }
   if (phaseTick >= s.dur) {
     if (s.type === 'work') beepWorkEnd();
     else if (s.type === 'move' || s.type === 'roundrest') beepMoveEnd();
@@ -504,8 +550,13 @@ function toggle() {
   if (!s || s.type === 'done') return;
   running = !running;
   document.getElementById('btn-start').textContent = running ? 'Pause' : 'Resume';
-  if (running) timerInterval = setInterval(tickFn, 1000);
-  else clearInterval(timerInterval);
+  if (running) {
+    timerInterval = setInterval(tickFn, 1000);
+    requestWakeLock();
+  } else {
+    clearInterval(timerInterval);
+    releaseWakeLock();
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
