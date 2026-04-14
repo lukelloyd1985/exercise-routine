@@ -316,6 +316,7 @@ function buildSequence() {
   const rounds = cfg.rounds;
   let s = [];
   s.push({ type: 'warmup', dur: 180, section: 'warmup' });
+  s.push({ type: 'move', toSection: 'circuit', dur: MOVE, section: 'warmup' });
   for (let r = 0; r < rounds; r++) {
     for (let e = 0; e < exercises.length; e++) {
       s.push({ type: 'work', round: r, ex: e, dur: WORK, section: 'circuit' });
@@ -325,6 +326,7 @@ function buildSequence() {
     if (r < rounds - 1)
       s.push({ type: 'roundrest', round: r, dur: ROUNDREST, section: 'circuit' });
   }
+  s.push({ type: 'move', toSection: 'cardio', dur: MOVE, section: 'circuit' });
   for (let i = 0; i < finisherIntervals.length; i++)
     s.push({ type: 'finisher', fi: i, dur: finisherIntervals[i].dur, section: 'cardio' });
   s.push({ type: 'done', dur: 0, section: 'done' });
@@ -496,13 +498,25 @@ function renderTimer() {
     document.getElementById('pbar').className = 'pb pb-work';
 
   } else if (s.type === 'move') {
-    const next = exercises[s.nextEx];
     document.getElementById('phase-tag').className = 'phase-tag pt-move';
     document.getElementById('phase-tag').textContent = 'Move';
-    document.getElementById('ex-name').textContent = 'Next: ' + next.name;
-    document.getElementById('ex-target').textContent = next.tip();
-    document.getElementById('round-info').textContent = 'Round ' + (s.round+1) + ' · get in position';
     document.getElementById('pbar').className = 'pb pb-move';
+
+    if (s.toSection === 'circuit') {
+      const firstEx = exercises[0];
+      document.getElementById('ex-name').textContent = 'Circuit starting';
+      document.getElementById('ex-target').textContent = 'Get ready for ' + firstEx.name + ' · ' + firstEx.tip();
+      document.getElementById('round-info').textContent = 'Move to circuit area · get in position';
+    } else if (s.toSection === 'cardio') {
+      document.getElementById('ex-name').textContent = 'Cardio starting';
+      document.getElementById('ex-target').textContent = 'Move to treadmill · set speed to ' + finisherIntervals[0].speed;
+      document.getElementById('round-info').textContent = 'Circuit complete · get ready for cardio finisher';
+    } else {
+      const next = exercises[s.nextEx];
+      document.getElementById('ex-name').textContent = 'Next: ' + next.name;
+      document.getElementById('ex-target').textContent = next.tip();
+      document.getElementById('round-info').textContent = 'Round ' + (s.round+1) + ' · get in position';
+    }
 
   } else if (s.type === 'roundrest') {
     document.getElementById('phase-tag').className = 'phase-tag pt-rest';
